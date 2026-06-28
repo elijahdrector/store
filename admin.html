@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Panel – Elijah's 3D Prints</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg: #080D14; --card: #111827; --blue: #38BDF8; --white: #F0F8FF; --grey: #94A3B8; --red: #EF4444; --green: #22C55E; --border: rgba(56,189,248,0.2); }
+  body { background: var(--bg); color: var(--white); font-family: 'Rajdhani', sans-serif; min-height: 100vh; }
+
+  /* LOGIN */
+  #loginScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:2rem; }
+  #loginScreen h1 { font-family:'Orbitron',monospace; color:var(--blue); font-size:1.5rem; margin-bottom:0.5rem; }
+  #loginScreen p { color:var(--grey); margin-bottom:2rem; }
+  #loginScreen input { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:0.75rem 1rem; color:var(--white); font-family:'Rajdhani',sans-serif; font-size:1rem; width:280px; outline:none; margin-bottom:0.75rem; display:block; }
+  #loginScreen button { background:var(--blue); color:var(--bg); font-family:'Orbitron',monospace; font-weight:700; border:none; border-radius:8px; padding:0.75rem 2rem; cursor:pointer; font-size:0.9rem; width:280px; }
+  #loginError { color:var(--red); font-size:0.85rem; margin-top:0.5rem; display:none; }
+
+  /* ADMIN PANEL */
+  #adminPanel { display:none; }
+  header { background:var(--card); border-bottom:1px solid var(--border); padding:1rem 2rem; display:flex; align-items:center; justify-content:space-between; }
+  header h1 { font-family:'Orbitron',monospace; color:var(--blue); font-size:1.1rem; }
+  header button { background:transparent; border:1px solid var(--border); color:var(--grey); padding:0.4rem 1rem; border-radius:6px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:0.9rem; }
+  .toolbar { padding:1.5rem 2rem 0; display:flex; justify-content:space-between; align-items:center; }
+  .toolbar h2 { font-size:1.1rem; color:var(--white); }
+  .btn-add { background:var(--blue); color:var(--bg); font-family:'Orbitron',monospace; font-weight:700; border:none; border-radius:8px; padding:0.6rem 1.2rem; cursor:pointer; font-size:0.8rem; }
+  .save-bar { background:#0F3040; border:1px solid rgba(56,189,248,0.4); border-radius:8px; margin:1rem 2rem; padding:0.75rem 1.2rem; display:none; align-items:center; justify-content:space-between; }
+  .save-bar span { color:var(--blue); font-size:0.9rem; }
+  .btn-save { background:var(--green); color:#fff; font-family:'Orbitron',monospace; font-weight:700; border:none; border-radius:6px; padding:0.5rem 1.2rem; cursor:pointer; font-size:0.8rem; }
+
+  /* PRODUCT TABLE */
+  .product-table { padding:1rem 2rem 4rem; }
+  .product-row { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem 1.2rem; margin-bottom:0.75rem; display:flex; align-items:center; gap:1rem; }
+  .product-row img { width:64px; height:64px; object-fit:cover; border-radius:6px; background:#1A2535; flex-shrink:0; }
+  .product-row-info { flex:1; min-width:0; }
+  .product-row-info h3 { font-size:0.95rem; font-weight:700; color:var(--white); margin-bottom:0.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .product-row-info p { font-size:0.78rem; color:var(--grey); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .product-row-price { font-family:'Orbitron',monospace; color:var(--blue); font-size:0.95rem; white-space:nowrap; }
+  .btn-edit { background:rgba(56,189,248,0.15); border:1px solid var(--border); color:var(--blue); padding:0.4rem 0.9rem; border-radius:6px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:0.85rem; }
+  .btn-delete { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); padding:0.4rem 0.9rem; border-radius:6px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:0.85rem; }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:999; overflow-y:auto; }
+  .modal { background:var(--card); border:1px solid var(--border); border-radius:16px; max-width:520px; margin:2rem auto; padding:2rem; }
+  .modal h2 { font-family:'Orbitron',monospace; color:var(--blue); font-size:1.1rem; margin-bottom:1.5rem; }
+  .field { margin-bottom:1.1rem; }
+  .field label { display:block; color:var(--grey); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem; }
+  .field input, .field textarea, .field select { width:100%; background:#0F1923; border:1px solid var(--border); border-radius:8px; padding:0.65rem 0.8rem; color:var(--white); font-family:'Rajdhani',sans-serif; font-size:0.95rem; outline:none; }
+  .field textarea { resize:vertical; min-height:80px; line-height:1.5; }
+  .img-preview { width:100%; height:160px; object-fit:contain; background:#0F1923; border-radius:8px; margin-bottom:0.5rem; border:1px solid var(--border); }
+  .modal-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .modal-btns { display:flex; gap:0.75rem; margin-top:1.5rem; }
+  .modal-btns button { flex:1; padding:0.75rem; border-radius:8px; border:none; cursor:pointer; font-family:'Orbitron',monospace; font-weight:700; font-size:0.85rem; }
+  .btn-cancel { background:transparent; border:1px solid var(--border) !important; color:var(--grey); }
+  .btn-confirm { background:var(--blue); color:var(--bg); }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(80px); background:#1E293B; color:var(--white); padding:0.7rem 1.4rem; border-radius:50px; font-size:0.9rem; transition:transform 0.3s; z-index:9999; pointer-events:none; white-space:nowrap; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  @media(max-width:600px) {
+    header, .toolbar, .product-table { padding-left:1rem; padding-right:1rem; }
+    .product-row { flex-wrap:wrap; }
+    .modal { margin:1rem; }
+    .modal-row { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <h1>⚙️ Staff Panel</h1>
+  <p>Elijah's 3D Prints — Admin Access</p>
+  <div style="position:relative; width:280px; margin-bottom:0.75rem;">
+    <input type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')login()" style="width:100%; padding-right:2.8rem; margin-bottom:0;">
+    <button onclick="togglePw()" tabindex="-1" id="eyeBtn" style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center; color:#64748B;">
+      <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+    </button>
+  </div>
+  <button onclick="login()">ENTER</button>
+  <div id="loginError">Incorrect password. Try again.</div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel">
+  <header>
+    <h1>⚙️ Staff Panel</h1>
+    <button onclick="logout()">Log Out</button>
+  </header>
+
+  <div class="toolbar">
+    <h2>Products (<span id="productCount">0</span>)</h2>
+    <button class="btn-add" onclick="openAddModal()">+ ADD PRODUCT</button>
+  </div>
+
+  <div class="save-bar" id="saveBar">
+    <span>⚠️ You have unsaved changes</span>
+    <button class="btn-save" onclick="saveAll()">SAVE ALL CHANGES</button>
+  </div>
+
+  <div class="product-table" id="productTable"></div>
+</div>
+
+<!-- EDIT / ADD MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Edit Product</h2>
+    <img id="imgPreview" class="img-preview" src="" alt="Product preview">
+    <div class="field">
+      <label>Product Image</label>
+      <input type="file" id="imgFile" accept="image/*" onchange="previewImage(this)">
+    </div>
+    <div class="field">
+      <label>Product Name</label>
+      <input type="text" id="editName" placeholder="Product Name">
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="editDesc" placeholder="Description"></textarea>
+    </div>
+    <div class="modal-row">
+      <div class="field">
+        <label>Price ($)</label>
+        <input type="number" id="editPrice" step="0.01" min="0" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select id="editType">
+          <option value="regular">Regular Product</option>
+          <option value="custom">Custom Print (Price Varies)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="saveProduct()">SAVE PRODUCT</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PASS = 'Elijahiscool12!';
+let products = [];
+let editingId = null;
+let dirty = false;
+let newImgData = null;
+
+function togglePw() {
+  const input = document.getElementById('pwInput');
+  const open = document.getElementById('eyeOpen');
+  const closed = document.getElementById('eyeClosed');
+  if (input.type === 'password') {
+    input.type = 'text';
+    open.style.display = 'none';
+    closed.style.display = 'block';
+  } else {
+    input.type = 'password';
+    open.style.display = 'block';
+    closed.style.display = 'none';
+  }
+}
+
+function login() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === PASS) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    loadProducts();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function logout() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminPanel').style.display = 'none';
+  document.getElementById('pwInput').value = '';
+  dirty = false;
+}
+
+async function loadProducts() {
+  const res = await fetch('/api/products');
+  products = await res.json();
+  renderTable();
+}
+
+function renderTable() {
+  document.getElementById('productCount').textContent = products.length;
+  const table = document.getElementById('productTable');
+  table.innerHTML = products.map(p => `
+    <div class="product-row">
+      <img src="${p.img}" alt="${p.name}">
+      <div class="product-row-info">
+        <h3>${p.name}</h3>
+        <p>${p.desc}</p>
+      </div>
+      <div class="product-row-price">${p.isCustom ? 'Price Varies' : '$' + Number(p.price).toFixed(2)}</div>
+      <button class="btn-edit" onclick="openEditModal(${p.id})">Edit</button>
+      <button class="btn-delete" onclick="deleteProduct(${p.id})">Delete</button>
+    </div>
+  `).join('');
+}
+
+function markDirty() {
+  dirty = true;
+  document.getElementById('saveBar').style.display = 'flex';
+}
+
+function deleteProduct(id) {
+  if (!confirm('Delete this product? This cannot be undone.')) return;
+  products = products.filter(p => p.id !== id);
+  renderTable();
+  markDirty();
+}
+
+function openAddModal() {
+  editingId = null;
+  newImgData = null;
+  document.getElementById('modalTitle').textContent = 'Add New Product';
+  document.getElementById('editName').value = '';
+  document.getElementById('editDesc').value = '';
+  document.getElementById('editPrice').value = '';
+  document.getElementById('editType').value = 'regular';
+  document.getElementById('imgPreview').src = '';
+  document.getElementById('imgFile').value = '';
+  document.getElementById('modalOverlay').style.display = 'block';
+}
+
+function openEditModal(id) {
+  const p = products.find(p => p.id === id);
+  if (!p) return;
+  editingId = id;
+  newImgData = null;
+  document.getElementById('modalTitle').textContent = 'Edit Product';
+  document.getElementById('editName').value = p.name;
+  document.getElementById('editDesc').value = p.desc;
+  document.getElementById('editPrice').value = p.isCustom ? '' : p.price;
+  document.getElementById('editType').value = p.isCustom ? 'custom' : 'regular';
+  document.getElementById('imgPreview').src = p.img;
+  document.getElementById('imgFile').value = '';
+  document.getElementById('modalOverlay').style.display = 'block';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  newImgData = null;
+}
+
+function previewImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    newImgData = e.target.result;
+    document.getElementById('imgPreview').src = newImgData;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveProduct() {
+  const name = document.getElementById('editName').value.trim();
+  const desc = document.getElementById('editDesc').value.trim();
+  const priceRaw = document.getElementById('editPrice').value;
+  const isCustom = document.getElementById('editType').value === 'custom';
+  const price = isCustom ? 0 : parseFloat(priceRaw);
+
+  if (!name) { showToast('Please enter a product name.'); return; }
+  if (!isCustom && (isNaN(price) || price < 0)) { showToast('Please enter a valid price.'); return; }
+
+  if (editingId === null) {
+    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+    const img = newImgData || 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 400 400%22%3E%3Crect width%3D%22400%22 height%3D%22400%22 fill%3D%22%231A2535%22%2F%3E%3Ctext x%3D%22200%22 y%3D%22215%22 text-anchor%3D%22middle%22 font-size%3D%2280%22 fill%3D%22%2338BDF8%22%3E%3F%3C%2Ftext%3E%3C%2Fsvg%3E';
+    products.push({ id: newId, name, desc, price, isCustom: isCustom || undefined, img });
+    showToast('Product added!');
+  } else {
+    const idx = products.findIndex(p => p.id === editingId);
+    if (idx === -1) return;
+    products[idx] = {
+      ...products[idx],
+      name, desc, price,
+      isCustom: isCustom || undefined,
+      img: newImgData || products[idx].img
+    };
+    if (!isCustom) delete products[idx].isCustom;
+    showToast('Product updated!');
+  }
+
+  closeModal();
+  renderTable();
+  markDirty();
+}
+
+async function saveAll() {
+  const btn = document.querySelector('.btn-save');
+  btn.textContent = 'SAVING...';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/admin/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': PASS },
+      body: JSON.stringify(products)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      dirty = false;
+      document.getElementById('saveBar').style.display = 'none';
+      showToast('✓ All changes saved!');
+    } else {
+      showToast('Error: ' + (data.error || 'Save failed'));
+    }
+  } catch {
+    showToast('Network error — try again.');
+  }
+  btn.textContent = 'SAVE ALL CHANGES';
+  btn.disabled = false;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.addEventListener('beforeunload', e => {
+  if (dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>
